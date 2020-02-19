@@ -22,12 +22,19 @@ public class Main {
                 list.add(x * SIZE + y, Map.entry(x, y));
             }
         }
+        BufferedImage bufferedImage;
+        try {
+            bufferedImage = ImageIO.read(imageFile);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            return;
+        }
         String[][] strings = new String[SIZE][SIZE];
         list.parallelStream().forEach(entry -> {
             try {
                 ITesseract instance = new Tesseract();
                 instance.setDatapath("src/main/resources/tessdata");
-                String result = instance.doOCR(imageFile, new Rectangle(entry.getKey() * 100, entry.getValue() * 100, 100, 100))
+                String result = instance.doOCR(bufferedImage, new Rectangle(entry.getKey() * 100, entry.getValue() * 100, 100, 100))
                         .replaceAll("\\s+", " ").toLowerCase();
                 strings[entry.getKey()][entry.getValue()] = result;
                 set.add(result);
@@ -38,7 +45,6 @@ public class Main {
 
         Pattern whitePattern = Pattern.compile(".*(\0x2b|wh.*t.*|).*");
         Pattern blackPattern = Pattern.compile(".*((not|n00).?wh|dark|ness|black|olack).*");
-        set.forEach(System.out::println);
         Map<String, Boolean> stringToColor = set.stream().map(key -> Map.entry(key, key.startsWith("(") || key.matches(".*\\d.*")
                 ? (key.length() >= 12) : whitePattern.matcher(key).matches() && !blackPattern.matcher(key).matches())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         BufferedImage image = new BufferedImage(SIZE, SIZE, BufferedImage.TYPE_BYTE_BINARY);
